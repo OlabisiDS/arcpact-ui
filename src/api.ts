@@ -42,17 +42,21 @@ export type NotificationEvent =
   | 'DISPUTE_RAISED'
 
 export interface ArcNotification {
-  id: string; pactId: string; event: NotificationEvent
-  message: string; forRole: 'sender' | 'receiver' | 'both'
-  createdAt: string; read: boolean
+  id: string
+  pactId: string
+  event: NotificationEvent
+  message: string
+  forRole: 'sender' | 'receiver' | 'both'
+  createdAt: string
+  read: boolean
 }
 
 // ─── Pact API ─────────────────────────────────────────────────────────────────
 
-export const fetchAllPacts  = async (): Promise<Pact[]> =>
+export const fetchAllPacts = async (): Promise<Pact[]> =>
   (await api.get<{ data: Pact[] }>('/pact/all')).data.data
 
-export const fetchPactById  = async (id: string): Promise<Pact> =>
+export const fetchPactById = async (id: string): Promise<Pact> =>
   (await api.get<{ data: Pact }>(`/pact/${id}`)).data.data
 
 export const fetchPactRole = async (pactId: string, wallet: string): Promise<{ role: PactRole; pact: Pact }> =>
@@ -68,10 +72,9 @@ export const cancelPact = async (pactId: string, callerAddress: string): Promise
   (await api.post<{ data: Pact }>('/pact/cancel', { pactId, callerAddress })).data.data
 
 // ─── Arc testnet config ───────────────────────────────────────────────────────
-const ARC_USDC_ADDRESS = '0x09D1fA26bF91A7d882f2De2a89f3d9AA67F8F8c'
-const ESCROW_ADDRESS   = '0xbec4cdc622c45ad9974d4ef1a665e77bbdd68bb9'
+const ESCROW_ADDRESS = '0xbec4cdc622c45ad9974d4ef1a665e77bbdd68bb9'
 
-// ─── Helper: send USDC via MetaMask ──────────────────────────────────────────
+// ─── Helper: send USDC via MetaMask (FIXED) ───────────────────────────────────
 const sendUSDC = async (from: string, to: string, amount: string): Promise<string> => {
   const eth = (window as any).ethereum
   if (!eth) throw new Error('MetaMask not found. Please install MetaMask and add Arc Testnet.')
@@ -81,29 +84,27 @@ const sendUSDC = async (from: string, to: string, amount: string): Promise<strin
     await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x4CEED2' }] })
   } catch (err: any) {
     if (err?.code === 4902) {
-      await eth.request({ method: 'wallet_addEthereumChain', params: [{
-        chainId: '0x4CEED2',
-        chainName: 'Arc Testnet',
-        nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
-        rpcUrls: ['https://rpc.testnet.arc.network'],
-        blockExplorerUrls: ['https://testnet.arcscan.app'],
-      }] })
+      await eth.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: '0x4CEED2',
+          chainName: 'Arc Testnet',
+          nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
+          rpcUrls: ['https://rpc.testnet.arc.network'],
+          blockExplorerUrls: ['https://testnet.arcscan.app'],
+        }],
+      })
     }
   }
 
-  const amountInUnits = BigInt(Math.round(parseFloat(amount) * 1_000_000))
-  // ... rest stays the same
-
-  const amountInUnits = BigInt(Math.round(parseFloat(amount) * 1_000_000))
-  const selector        = '0xa9059cbb'
-  const paddedRecipient = to.toLowerCase().replace('0x', '').padStart(64, '0')
-  const paddedAmount    = amountInUnits.toString(16).padStart(64, '0')
-  const data            = `${selector}${paddedRecipient}${paddedAmount}`
+  // Native transfer (USDC is gas token on Arc)
+  const amountInWei = BigInt(Math.round(parseFloat(amount) * 1e18))
+  const amountHex = '0x' + amountInWei.toString(16)
 
   try {
     const txHash: string = await eth.request({
       method: 'eth_sendTransaction',
-      params: [{ from, to: ARC_USDC_ADDRESS, data }],
+      params: [{ from, to, value: amountHex }],
     })
     if (!txHash) throw new Error('Transaction failed — no hash returned')
     return txHash
@@ -140,12 +141,14 @@ export const requestRefund = async (pactId: string, callerAddress: string): Prom
 export const raiseDispute = async (pactId: string, callerAddress: string, note?: string): Promise<Pact> =>
   (await api.post<{ data: Pact }>('/pact/dispute', { pactId, callerAddress, note: note ?? '' })).data.data
 
-// ─── Notifications (wallet-scoped) ────────────────────────────────────────────
+// ─── Notifications ────────────────────────────────────────────────────────────
 
 export const fetchNotifications = async (wallet?: string): Promise<ArcNotification[]> =>
   (await api.get<{ data: ArcNotification[] }>(`/pact/notifications${wallet ? `?wallet=${wallet}` : ''}`)).data.data
 
-export const markAllRead = async (): Promise<void> => { await api.post('/pact/notifications/read', {}) }
+export const markAllRead = async (): Promise<void> => {
+  await api.post('/pact/notifications/read', {})
+}
 
 // ─── Error helper ─────────────────────────────────────────────────────────────
 
