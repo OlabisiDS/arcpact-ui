@@ -76,6 +76,24 @@ const sendUSDC = async (from: string, to: string, amount: string): Promise<strin
   const eth = (window as any).ethereum
   if (!eth) throw new Error('MetaMask not found. Please install MetaMask and add Arc Testnet.')
 
+  // Ensure correct network before sending
+  try {
+    await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x4CEED2' }] })
+  } catch (err: any) {
+    if (err?.code === 4902) {
+      await eth.request({ method: 'wallet_addEthereumChain', params: [{
+        chainId: '0x4CEED2',
+        chainName: 'Arc Testnet',
+        nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
+        rpcUrls: ['https://rpc.testnet.arc.network'],
+        blockExplorerUrls: ['https://testnet.arcscan.app'],
+      }] })
+    }
+  }
+
+  const amountInUnits = BigInt(Math.round(parseFloat(amount) * 1_000_000))
+  // ... rest stays the same
+
   const amountInUnits = BigInt(Math.round(parseFloat(amount) * 1_000_000))
   const selector        = '0xa9059cbb'
   const paddedRecipient = to.toLowerCase().replace('0x', '').padStart(64, '0')
