@@ -177,7 +177,8 @@ function NotifPanel({ wallet, onClose }: { wallet: string | null; onClose: () =>
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    fetchNotifications(wallet ?? undefined)
+    if (!wallet) { setNotifs([]); setLoading(false); return }
+    fetchNotifications(wallet)
       .then(d => { setNotifs(d); setLoading(false) })
       .catch(() => setLoading(false))
   }, [wallet])
