@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  * { box-sizing: border-box; }
+
+  body {
+    background-color: #f1f5f9;
+    color: #0f172a;
+  }
+
+  html.dark body {
+    background-color: #04060f;
+    color: #e2e8f0;
+  }
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.15); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.3); }
+
+/* ── Remove number arrows ──────────────────────────────────────────────────── */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
+/* ── Theme transitions ─────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.1s ease;
+}
+.animate-spin, .animate-pulse, .animate-slide-up, .animate-float, .animate-shimmer {
+  transition: none !important;
+}
+
+/* ── Dark grid background on hero ─────────────────────────────────────────── */
+.hero-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* ── Glass card ────────────────────────────────────────────────────────────── */
+.glass {
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.07);
+}
+
+.glass-light {
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+/* ── Glow text ─────────────────────────────────────────────────────────────── */
+.text-glow-blue {
+  text-shadow: 0 0 40px rgba(59,130,246,0.5), 0 0 80px rgba(37,99,235,0.25);
+}
+
+/* ── Gradient text ─────────────────────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #ffffff 0%, #93c5fd 50%, #60a5fa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-cyan {
+  background: linear-gradient(135deg, #67e8f9 0%, #22d3ee 50%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Status accent bars ────────────────────────────────────────────────────── */
+.status-bar-created      { background: linear-gradient(90deg, #64748b, #94a3b8); }
+.status-bar-accepted     { background: linear-gradient(90deg, #2563eb, #60a5fa); }
+.status-bar-locked       { background: linear-gradient(90deg, #d97706, #fbbf24); }
+.status-bar-disputed     { background: linear-gradient(90deg, #ea580c, #fb923c); }
+.status-bar-completed    { background: linear-gradient(90deg, #059669, #34d399); }
+.status-bar-refunded     { background: linear-gradient(90deg, #e11d48, #fb7185); }
+
+/* ── Button press ──────────────────────────────────────────────────────────── */
+.btn-press:active { transform: scale(0.97); }
+
+/* ── Feature card hover glow ───────────────────────────────────────────────── */
+.feature-card:hover {
+  box-shadow: 0 0 0 1px rgba(37,99,235,0.3), 0 8px 32px rgba(0,0,0,0.5), 0 0 40px rgba(37,99,235,0.08);
+}
+.dark .feature-card:hover { /* already above */ }
+
+/* ── Ticker marquee ────────────────────────────────────────────────────────── */
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.marquee-track { animation: marquee 30s linear infinite; }
+.marquee-track:hover { animation-play-state: paused; }
