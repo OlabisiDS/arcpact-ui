@@ -64,6 +64,9 @@ export const createPact = async (p: CreatePactPayload): Promise<Pact> =>
 export const acceptPact = async (pactId: string, callerAddress: string): Promise<Pact> =>
   (await api.post<{ data: Pact }>('/pact/accept', { pactId, callerAddress })).data.data
 
+export const cancelPact = async (pactId: string, callerAddress: string): Promise<Pact> =>
+  (await api.post<{ data: Pact }>('/pact/cancel', { pactId, callerAddress })).data.data
+
 // ─── Arc testnet config ───────────────────────────────────────────────────────
 const ARC_USDC_ADDRESS = '0x09D1fA26bF91A7d882f2De2a89f3d9AA67F8F8c'
 const ESCROW_ADDRESS   = '0xbec4cdc622c45ad9974d4ef1a665e77bbdd68bb9'
