@@ -74,7 +74,7 @@ export const cancelPact = async (pactId: string, callerAddress: string): Promise
 // ─── Arc testnet config ───────────────────────────────────────────────────────
 const ESCROW_ADDRESS = '0xbec4cdc622c45ad9974d4ef1a665e77bbdd68bb9'
 const USDC_CONTRACT  = '0x3600000000000000000000000000000000000000'
-const ARC_CHAIN_ID   = '0x4CE892' // 5042002 in hex — DO NOT CHANGE THIS
+const ARC_CHAIN_ID = '0x' + (5042002).toString(16)
 
 // ─── Helper: send USDC via MetaMask ──────────────────────────────────────────
 const sendUSDC = async (from: string, to: string, amount: string): Promise<string> => {
