@@ -83,6 +83,11 @@ function useWallet() {
     }
     eth.on('accountsChanged', h); return () => eth.removeListener?.('accountsChanged', h)
   }, [])
+  useEffect(() => {
+    const eth = (window as any).ethereum
+    if (!eth || !localStorage.getItem('arc_wallet')) return
+    switchToArcTestnet(eth).catch(() => {})
+  }, [])
   return { address, connect, disconnect }
 }
 
@@ -1092,8 +1097,9 @@ export default function App() {
   const [unreadCount, setUnreadCount]                    = useState(0)
 
   const refreshUnread = useCallback(async () => {
+    if (!walletAddress) { setUnreadCount(0); return }
     try {
-      const notifs = await fetchNotifications(walletAddress ?? undefined)
+      const notifs = await fetchNotifications(walletAddress)
       setUnreadCount(notifs.filter(n => !n.read).length)
     } catch { /* silent */ }
   }, [walletAddress])
