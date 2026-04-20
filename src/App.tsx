@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Routes, Route, Link, useNavigate, useParams } from 'react-router-dom'
 import {
   fetchAllPacts, fetchPactById, fetchPactRole, createPact,
-  acceptPact, lockFunds, requestRelease, approveRelease,
+  acceptPact, lockFunds, cancelPact, requestRelease, approveRelease,
   requestRefund, approveRefund, raiseDispute,
   fetchNotifications, markAllRead, getErrorMessage,
   type Pact, type PactStatus, type PactRole, type ArcNotification,
@@ -402,6 +402,7 @@ function PactActions({ pact, role, walletAddress, onAction, loading }: {
   // Role-based action availability — frontend primary enforcement
   const acts = {
     accept:         role === 'receiver' && pact.status === 'CREATED',
+    cancel:         role === 'sender'   && pact.status === 'CREATED',
     lock:           role === 'sender'   && pact.status === 'ACCEPTED',
     requestRelease: role === 'receiver' && locked && !pact.receiverReleaseRequest,
     approveRelease: role === 'sender'   && locked && pact.receiverReleaseRequest && !pact.senderApproval,
@@ -440,6 +441,7 @@ function PactActions({ pact, role, walletAddress, onAction, loading }: {
             : (
               <div className="flex gap-3 flex-wrap">
                 {acts.accept         && <button onClick={() => setCs({ action:'accept', title:'Accept this pact?', body:'You agree to the escrow terms. The sender can then lock funds.', icon:'accept' })} disabled={loading} className="flex-1 py-3 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl btn-press disabled:opacity-40 transition-colors">Accept Pact</button>}
+                {acts.cancel         && <button onClick={() => setCs({ action:'cancel', title:'Cancel this pact?', body:'The pact will be closed. No funds have been moved.', icon:'refund' })} disabled={loading} className="flex-1 py-3 text-sm font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-xl btn-press hover:bg-rose-600 hover:text-white hover:border-rose-600 disabled:opacity-40 transition-colors">Cancel Pact</button>}
                 {acts.lock           && <button onClick={() => setCs({ action:'lock', title:'Fund the escrow?', body:'USDC will be locked until both parties agree to settle.', icon:'lock', amount:pact.amount })} disabled={loading} className="flex-1 py-3 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl btn-press disabled:opacity-40 transition-colors">Fund Escrow</button>}
                 {acts.requestRelease && <button onClick={() => setCs({ action:'request-release', title:'Request payment?', body:"Signal you've delivered. Sender will approve.", icon:'release', amount:pact.amount })} disabled={loading} className="flex-1 py-3 text-sm font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl btn-press hover:bg-emerald-600 hover:text-white hover:border-emerald-600 disabled:opacity-40 transition-colors">Request Payment</button>}
                 {acts.approveRelease && <button onClick={() => setCs({ action:'approve-release', title:'Approve payment?', body:'Releases funds to receiver. Cannot be undone.', icon:'release', amount:pact.amount, recipient:pact.receiverAddress })} disabled={loading} className="flex-1 py-3 text-sm font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl btn-press hover:bg-emerald-600 hover:text-white hover:border-emerald-600 disabled:opacity-40 transition-colors">Approve Payment</button>}
@@ -819,6 +821,7 @@ function PactDetailPage({ walletAddress, connectWallet, pushToast }: {
     try {
       let updated: Pact
       if      (action === 'accept')          { updated = await acceptPact(pactId, caller);     pushToast('Pact accepted', 'success') }
+      else if (action === 'cancel')          { updated = await cancelPact(pactId, caller);     pushToast('Pact cancelled', 'success') }
       else if (action === 'lock')            { updated = await lockFunds(pactId, caller, pact!.amount); pushToast('Funds locked in escrow', 'success') }
       else if (action === 'request-release') { updated = await requestRelease(pactId, caller); pushToast('Payment requested', 'info') }
       else if (action === 'approve-release') { updated = await approveRelease(pactId, caller, pact!.amount, pact!.receiverAddress); pushToast('Funds released', 'success') }
