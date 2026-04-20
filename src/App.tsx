@@ -37,11 +37,11 @@ function useToasts() {
 
 // Arc Testnet chain config for MetaMask
 const ARC_TESTNET_CHAIN = {
-  chainId: '0x3E9B298',
+  chainId: '0x4CEED2',
   chainName: 'Arc Testnet',
   nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
-  rpcUrls: ['https://rpc.arc.testnet.circle.com'],
-  blockExplorerUrls: ['https://explorer.arc.testnet.circle.com'],
+  rpcUrls: ['https://rpc.testnet.arc.network'],
+  blockExplorerUrls: ['https://testnet.arcscan.app'],
 }
 
 async function switchToArcTestnet(eth: any) {
@@ -821,9 +821,9 @@ function PactDetailPage({ walletAddress, connectWallet, pushToast }: {
       if      (action === 'accept')          { updated = await acceptPact(pactId, caller);     pushToast('Pact accepted', 'success') }
       else if (action === 'lock')            { updated = await lockFunds(pactId, caller, pact!.amount); pushToast('Funds locked in escrow', 'success') }
       else if (action === 'request-release') { updated = await requestRelease(pactId, caller); pushToast('Payment requested', 'info') }
-      else if (action === 'approve-release') { updated = await approveRelease(pactId, caller); pushToast('Funds released', 'success') }
+      else if (action === 'approve-release') { updated = await approveRelease(pactId, caller, pact!.amount, pact!.receiverAddress); pushToast('Funds released', 'success') }
       else if (action === 'request-refund')  { updated = await requestRefund(pactId, caller);  pushToast('Refund requested', 'info') }
-      else if (action === 'approve-refund')  { updated = await approveRefund(pactId, caller);  pushToast('Funds refunded', 'success') }
+      else if (action === 'approve-refund')  { updated = await approveRefund(pactId, caller, pact!.amount, pact!.senderAddress);  pushToast('Funds refunded', 'success') }
       else if (action.startsWith('dispute:')) { updated = await raiseDispute(pactId, caller, action.slice(8)); pushToast('Dispute raised', 'info') }
       else return
       setPact(updated)
