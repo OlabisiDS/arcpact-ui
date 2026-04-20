@@ -68,53 +68,53 @@ export const acceptPact = async (pactId: string, callerAddress: string): Promise
 const ARC_USDC_ADDRESS = '0x09D1fA26bF91A7d882f2De2a89f3d9AA67F8F8c'
 const ESCROW_ADDRESS   = '0xbec4cdc622c45ad9974d4ef1a665e77bbdd68bb9'
 
-/**
- * lockFunds — two-step process:
- * 1. MetaMask sends USDC from sender's wallet to the escrow address on Arc testnet
- * 2. Backend records the lock (updates pact status to FUNDS_LOCKED)
- */
-export const lockFunds = async (pactId: string, callerAddress: string, amount: string): Promise<Pact> => {
+// ─── Helper: send USDC via MetaMask ──────────────────────────────────────────
+const sendUSDC = async (from: string, to: string, amount: string): Promise<string> => {
   const eth = (window as any).ethereum
   if (!eth) throw new Error('MetaMask not found. Please install MetaMask and add Arc Testnet.')
 
   const amountInUnits = BigInt(Math.round(parseFloat(amount) * 1_000_000))
-
-  const selector = '0xa9059cbb'
-  const paddedRecipient = ESCROW_ADDRESS.toLowerCase().replace('0x', '').padStart(64, '0')
+  const selector        = '0xa9059cbb'
+  const paddedRecipient = to.toLowerCase().replace('0x', '').padStart(64, '0')
   const paddedAmount    = amountInUnits.toString(16).padStart(64, '0')
   const data            = `${selector}${paddedRecipient}${paddedAmount}`
 
-  let txHash: string
   try {
-    txHash = await eth.request({
+    const txHash: string = await eth.request({
       method: 'eth_sendTransaction',
-      params: [{
-        from: callerAddress,
-        to:   ARC_USDC_ADDRESS,
-        data,
-      }],
+      params: [{ from, to: ARC_USDC_ADDRESS, data }],
     })
+    if (!txHash) throw new Error('Transaction failed — no hash returned')
+    return txHash
   } catch (err: any) {
     if (err?.code === 4001) throw new Error('Transaction rejected in MetaMask')
     throw new Error(`MetaMask transfer failed: ${err?.message ?? 'Unknown error'}`)
   }
+}
 
-  if (!txHash) throw new Error('Transaction failed — no hash returned')
-
+// ─── lockFunds ────────────────────────────────────────────────────────────────
+export const lockFunds = async (pactId: string, callerAddress: string, amount: string): Promise<Pact> => {
+  await sendUSDC(callerAddress, ESCROW_ADDRESS, amount)
   return (await api.post<{ data: Pact }>('/pact/lock', { pactId, callerAddress })).data.data
+}
+
+// ─── approveRelease ───────────────────────────────────────────────────────────
+export const approveRelease = async (pactId: string, callerAddress: string, amount: string, receiverAddress: string): Promise<Pact> => {
+  await sendUSDC(callerAddress, receiverAddress, amount)
+  return (await api.post<{ data: Pact }>('/pact/approve-release', { pactId, callerAddress })).data.data
+}
+
+// ─── approveRefund ────────────────────────────────────────────────────────────
+export const approveRefund = async (pactId: string, callerAddress: string, amount: string, senderAddress: string): Promise<Pact> => {
+  await sendUSDC(callerAddress, senderAddress, amount)
+  return (await api.post<{ data: Pact }>('/pact/approve-refund', { pactId, callerAddress })).data.data
 }
 
 export const requestRelease = async (pactId: string, callerAddress: string): Promise<Pact> =>
   (await api.post<{ data: Pact }>('/pact/request-release', { pactId, callerAddress })).data.data
 
-export const approveRelease = async (pactId: string, callerAddress: string): Promise<Pact> =>
-  (await api.post<{ data: Pact }>('/pact/approve-release', { pactId, callerAddress })).data.data
-
 export const requestRefund = async (pactId: string, callerAddress: string): Promise<Pact> =>
   (await api.post<{ data: Pact }>('/pact/request-refund', { pactId, callerAddress })).data.data
-
-export const approveRefund = async (pactId: string, callerAddress: string): Promise<Pact> =>
-  (await api.post<{ data: Pact }>('/pact/approve-refund', { pactId, callerAddress })).data.data
 
 export const raiseDispute = async (pactId: string, callerAddress: string, note?: string): Promise<Pact> =>
   (await api.post<{ data: Pact }>('/pact/dispute', { pactId, callerAddress, note: note ?? '' })).data.data
