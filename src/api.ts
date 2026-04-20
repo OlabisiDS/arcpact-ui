@@ -131,9 +131,4 @@ export const markAllRead = async (): Promise<void> => { await api.post('/pact/no
 export const getErrorMessage = (err: unknown): string => {
   if (axios.isAxiosError(err)) return err.response?.data?.message ?? err.message ?? 'Request failed'
   return err instanceof Error ? err.message : 'Something went wrong'
-}// ─── Error helper ─────────────────────────────────────────────────────────────
-
-export const getErrorMessage = (err: unknown): string => {
-  if (axios.isAxiosError(err)) return err.response?.data?.message ?? err.message ?? 'Request failed'
-  return err instanceof Error ? err.message : 'Something went wrong'
 }
