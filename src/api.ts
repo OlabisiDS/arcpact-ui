@@ -87,8 +87,8 @@ const sendUSDC = async (from: string, to: string, amount: string): Promise<strin
     await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: ARC_CHAIN_ID }] })
     console.log('Network switch successful')  // ADD THIS
   } catch (err: any) {
-    console.log('Network switch error:', err?.code, err?.message)  // ADD THIS
-    if (err?.code === 4902) {
+    console.log('Network switch error:', err?.code, err?.message)
+    if (err?.code === 4902 || err?.code === -32603) {
       await eth.request({
         method: 'wallet_addEthereumChain',
         params: [{
