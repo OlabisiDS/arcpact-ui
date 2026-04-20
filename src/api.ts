@@ -73,38 +73,54 @@ export const cancelPact = async (pactId: string, callerAddress: string): Promise
 
 // ─── Arc testnet config ───────────────────────────────────────────────────────
 const ESCROW_ADDRESS = '0xbec4cdc622c45ad9974d4ef1a665e77bbdd68bb9'
+const USDC_CONTRACT  = '0x3600000000000000000000000000000000000000'
+const ARC_CHAIN_ID   = '0x4CE892' // 5042002 in hex — DO NOT CHANGE THIS
 
-// ─── Helper: send USDC via MetaMask (FIXED) ───────────────────────────────────
+// ─── Helper: send USDC via MetaMask ──────────────────────────────────────────
 const sendUSDC = async (from: string, to: string, amount: string): Promise<string> => {
   const eth = (window as any).ethereum
   if (!eth) throw new Error('MetaMask not found. Please install MetaMask and add Arc Testnet.')
 
-  // Ensure correct network before sending
+  // Step 1: Try to switch to Arc Testnet
   try {
-    await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x4CEED2' }] })
+    await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: ARC_CHAIN_ID }] })
   } catch (err: any) {
+    // Code 4902 means the network doesn't exist in the wallet yet — so we add it
     if (err?.code === 4902) {
       await eth.request({
         method: 'wallet_addEthereumChain',
         params: [{
-          chainId: '0x4CEED2',
+          chainId: ARC_CHAIN_ID,
           chainName: 'Arc Testnet',
           nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
           rpcUrls: ['https://rpc.testnet.arc.network'],
           blockExplorerUrls: ['https://testnet.arcscan.app'],
         }],
       })
+    } else {
+      throw err
     }
   }
 
-  // Native transfer (USDC is gas token on Arc)
-  const amountInWei = BigInt(Math.round(parseFloat(amount) * 1e18))
-  const amountHex = '0x' + amountInWei.toString(16)
+  // Step 2: Build ERC-20 transfer() calldata
+  // USDC on Arc uses 6 decimals for the ERC-20 interface
+  const amountInUnits = BigInt(Math.round(parseFloat(amount) * 1e6))
 
+  // ERC-20 transfer(address,uint256) function selector = 0xa9059cbb
+  const paddedTo     = to.replace('0x', '').toLowerCase().padStart(64, '0')
+  const paddedAmount = amountInUnits.toString(16).padStart(64, '0')
+  const data         = '0xa9059cbb' + paddedTo + paddedAmount
+
+  // Step 3: Send the ERC-20 transaction
   try {
     const txHash: string = await eth.request({
       method: 'eth_sendTransaction',
-      params: [{ from, to, value: amountHex }],
+      params: [{
+        from,
+        to:   USDC_CONTRACT, // sending TO the contract, not directly to recipient
+        data,                // the encoded transfer() call
+        value: '0x0',        // no native value — this is an ERC-20 call
+      }],
     })
     if (!txHash) throw new Error('Transaction failed — no hash returned')
     return txHash
