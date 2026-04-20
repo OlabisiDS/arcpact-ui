@@ -79,13 +79,15 @@ const ARC_CHAIN_ID   = '0x4CE892' // 5042002 in hex — DO NOT CHANGE THIS
 // ─── Helper: send USDC via MetaMask ──────────────────────────────────────────
 const sendUSDC = async (from: string, to: string, amount: string): Promise<string> => {
   const eth = (window as any).ethereum
+  console.log('sendUSDC called', { from, to, amount })  // ADD THIS
   if (!eth) throw new Error('MetaMask not found. Please install MetaMask and add Arc Testnet.')
 
-  // Step 1: Try to switch to Arc Testnet
   try {
+    console.log('Attempting network switch...')  // ADD THIS
     await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: ARC_CHAIN_ID }] })
+    console.log('Network switch successful')  // ADD THIS
   } catch (err: any) {
-    // Code 4902 means the network doesn't exist in the wallet yet — so we add it
+    console.log('Network switch error:', err?.code, err?.message)  // ADD THIS
     if (err?.code === 4902) {
       await eth.request({
         method: 'wallet_addEthereumChain',
@@ -102,29 +104,24 @@ const sendUSDC = async (from: string, to: string, amount: string): Promise<strin
     }
   }
 
-  // Step 2: Build ERC-20 transfer() calldata
-  // USDC on Arc uses 6 decimals for the ERC-20 interface
+  console.log('Building transaction...')  // ADD THIS
   const amountInUnits = BigInt(Math.round(parseFloat(amount) * 1e6))
-
-  // ERC-20 transfer(address,uint256) function selector = 0xa9059cbb
   const paddedTo     = to.replace('0x', '').toLowerCase().padStart(64, '0')
   const paddedAmount = amountInUnits.toString(16).padStart(64, '0')
   const data         = '0xa9059cbb' + paddedTo + paddedAmount
 
-  // Step 3: Send the ERC-20 transaction
+  console.log('Sending tx:', { from, to: USDC_CONTRACT, data })  // ADD THIS
+
   try {
     const txHash: string = await eth.request({
       method: 'eth_sendTransaction',
-      params: [{
-        from,
-        to:   USDC_CONTRACT, // sending TO the contract, not directly to recipient
-        data,                // the encoded transfer() call
-        value: '0x0',        // no native value — this is an ERC-20 call
-      }],
+      params: [{ from, to: USDC_CONTRACT, data, value: '0x0' }],
     })
+    console.log('txHash:', txHash)  // ADD THIS
     if (!txHash) throw new Error('Transaction failed — no hash returned')
     return txHash
   } catch (err: any) {
+    console.log('Send error:', err?.code, err?.message)  // ADD THIS
     if (err?.code === 4001) throw new Error('Transaction rejected in MetaMask')
     throw new Error(`MetaMask transfer failed: ${err?.message ?? 'Unknown error'}`)
   }
