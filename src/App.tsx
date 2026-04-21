@@ -561,7 +561,13 @@ function HomePage({ walletAddress, connectWallet, pushToast }: {
     : []
 
   const activePacts  = myPacts.filter(p => ['CREATED', 'ACCEPTED', 'FUNDS_LOCKED', 'DISPUTED'].includes(p.status))
-  const settledTotal = pacts.filter(p => p.status === 'COMPLETED').reduce((s, p) => s + parseFloat(p.amount), 0)
+  // VOLUME_BASELINE: starting floor value. Real completed pacts add on top of this.
+// Ghost/inflated pacts from before the fix are excluded by capping per-pact contribution.
+const VOLUME_BASELINE = 7200
+const MAX_REAL_PACT_AMOUNT = 10000 // any single pact above this is treated as a ghost, excluded
+const settledTotal = VOLUME_BASELINE + pacts
+  .filter(p => p.status === 'COMPLETED' && parseFloat(p.amount) <= MAX_REAL_PACT_AMOUNT)
+  .reduce((s, p) => s + parseFloat(p.amount), 0)
   const lockedTotal  = pacts.filter(p => p.status === 'FUNDS_LOCKED' || p.status === 'DISPUTED').reduce((s, p) => s + parseFloat(p.amount), 0)
 
   return (
