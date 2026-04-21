@@ -76,16 +76,26 @@ const ESCROW_ADDRESS = '0xbec4cdc622c45ad9974d4ef1a665e77bbdd68bb9'
 const USDC_CONTRACT  = '0x3600000000000000000000000000000000000000'
 const ARC_CHAIN_ID = '0x' + (5042002).toString(16)
 
-// ─── Helper: send USDC via MetaMask ──────────────────────────────────────────
+// ─── Helper: check USDC balance before attempting transfer ───────────────────
+const getUSDCBalance = async (eth: any, address: string): Promise<bigint> => {
+  const paddedAddress = address.replace('0x', '').toLowerCase().padStart(64, '0')
+  const data = '0x70a08231' + paddedAddress
+  const result: string = await eth.request({
+    method: 'eth_call',
+    params: [{ to: USDC_CONTRACT, data }, 'latest'],
+  })
+  return result && result !== '0x' ? BigInt(result) : 0n
+}
+
 const sendUSDC = async (from: string, to: string, amount: string): Promise<string> => {
   const eth = (window as any).ethereum
-  console.log('sendUSDC called', { from, to, amount })  // ADD THIS
+  console.log('sendUSDC called', { from, to, amount })
   if (!eth) throw new Error('MetaMask not found. Please install MetaMask and add Arc Testnet.')
 
   try {
-    console.log('Attempting network switch...')  // ADD THIS
+    console.log('Attempting network switch...')
     await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: ARC_CHAIN_ID }] })
-    console.log('Network switch successful')  // ADD THIS
+    console.log('Network switch successful')
   } catch (err: any) {
     console.log('Network switch error:', err?.code, err?.message)
     if (err?.code === 4902 || err?.code === -32603) {
@@ -104,8 +114,26 @@ const sendUSDC = async (from: string, to: string, amount: string): Promise<strin
     }
   }
 
-  console.log('Building transaction...')  // ADD THIS
+  // ── Pre-flight balance check ─────────────────────────────────────────────
+  console.log('Checking USDC balance...')
   const amountInUnits = BigInt(Math.round(parseFloat(amount) * 1e6))
+  try {
+    const balance = await getUSDCBalance(eth, from)
+    console.log('Balance:', balance.toString(), '| Required:', amountInUnits.toString())
+    if (balance < amountInUnits) {
+      const balanceFormatted = (Number(balance) / 1e6).toFixed(2)
+      const requiredFormatted = parseFloat(amount).toFixed(2)
+      throw new Error(
+        `Insufficient USDC balance. You have ${balanceFormatted} USDC but need ${requiredFormatted} USDC.`
+      )
+    }
+  } catch (err: any) {
+    if (err.message.startsWith('Insufficient USDC balance')) throw err
+    console.warn('Balance check failed, proceeding anyway:', err?.message)
+  }
+  // ── End pre-flight check ─────────────────────────────────────────────────
+
+  console.log('Building transaction...')
   const paddedTo     = to.replace('0x', '').toLowerCase().padStart(64, '0')
   const paddedAmount = amountInUnits.toString(16).padStart(64, '0')
   const data         = '0xa9059cbb' + paddedTo + paddedAmount
