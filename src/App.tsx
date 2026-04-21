@@ -548,11 +548,11 @@ function HomePage({ walletAddress, connectWallet, pushToast }: {
     if (!silent) setLoading(true)
     try {
       const data = await fetchAllPacts()
-// Only show pacts that actually made it into escrow or completed
-const meaningful = data.filter(p =>
-  ['FUNDS_LOCKED', 'DISPUTED', 'COMPLETED'].includes(p.status)
-)
-setPacts([...meaningful].reverse())
+      // Only show pacts that actually made it into escrow or completed
+      const meaningful = data.filter(p =>
+        ['FUNDS_LOCKED', 'DISPUTED', 'COMPLETED'].includes(p.status)
+      )
+      setPacts([...meaningful].reverse())
     } catch { if (!silent) pushToast('Could not load pacts', 'error') }
     finally { if (!silent) setLoading(false) }
   }, [pushToast])
@@ -1021,7 +1021,14 @@ function PactsPage({ walletAddress, connectWallet, pushToast }: {
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
-    try { const data = await fetchAllPacts(); setPacts([...data].reverse()) }
+    try { 
+      const data = await fetchAllPacts() 
+      // Only show pacts that actually made it into escrow or completed
+      const meaningful = data.filter(p =>
+        ['FUNDS_LOCKED', 'DISPUTED', 'COMPLETED'].includes(p.status)
+      )
+      setPacts([...meaningful].reverse())
+    }
     catch { if (!silent) pushToast('Could not load pacts', 'error') }
     finally { if (!silent) setLoading(false) }
   }, [pushToast])
@@ -1154,3 +1161,4 @@ export default function App() {
     </div>
   )
 }
+
