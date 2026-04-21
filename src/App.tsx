@@ -408,7 +408,7 @@ function PactActions({ pact, role, walletAddress, onAction, loading }: {
   // Role-based action availability — frontend primary enforcement
   const acts = {
     accept:         role === 'receiver' && pact.status === 'CREATED',
-    cancel:         role === 'sender'   && pact.status === 'CREATED',
+    cancel: role === 'sender' && (pact.status === 'CREATED' || pact.status === 'ACCEPTED'),
     lock:           role === 'sender'   && pact.status === 'ACCEPTED',
     requestRelease: role === 'receiver' && locked && !pact.receiverReleaseRequest,
     approveRelease: role === 'sender'   && locked && pact.receiverReleaseRequest && !pact.senderApproval,
