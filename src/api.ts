@@ -87,7 +87,7 @@ const getUSDCBalance = async (eth: any, address: string): Promise<bigint> => {
   return result && result !== '0x' ? BigInt(result) : 0n
 }
 
-const sendUSDC = async (from: string, to: string, amount: string): Promise<string> => {
+const sendUSDC = async (from: string, to: string, amount: string, skipBalanceCheck = false): Promise<string> => {
   const eth = (window as any).ethereum
   console.log('sendUSDC called', { from, to, amount })
   if (!eth) throw new Error('MetaMask not found. Please install MetaMask and add Arc Testnet.')
@@ -114,23 +114,26 @@ const sendUSDC = async (from: string, to: string, amount: string): Promise<strin
     }
   }
 
-  // ── Pre-flight balance check ─────────────────────────────────────────────
-  console.log('Checking USDC balance...')
+// ── Pre-flight balance check ─────────────────────────────────────────────
   const amountInUnits = BigInt(Math.round(parseFloat(amount) * 1e6))
-  try {
-    const balance = await getUSDCBalance(eth, from)
-    console.log('Balance:', balance.toString(), '| Required:', amountInUnits.toString())
-    if (balance < amountInUnits) {
-      const balanceFormatted = (Number(balance) / 1e6).toFixed(2)
-      const requiredFormatted = parseFloat(amount).toFixed(2)
-      throw new Error(
-        `Insufficient USDC balance. You have ${balanceFormatted} USDC but need ${requiredFormatted} USDC.`
-      )
+  if (!skipBalanceCheck) {
+    console.log('Checking USDC balance...')
+    try {
+      const balance = await getUSDCBalance(eth, from)
+      console.log('Balance:', balance.toString(), '| Required:', amountInUnits.toString())
+      if (balance < amountInUnits) {
+        const balanceFormatted = (Number(balance) / 1e6).toFixed(2)
+        const requiredFormatted = parseFloat(amount).toFixed(2)
+        throw new Error(
+          `Insufficient USDC balance. You have ${balanceFormatted} USDC but need ${requiredFormatted} USDC.`
+        )
+      }
+    } catch (err: any) {
+      if (err.message.startsWith('Insufficient USDC balance')) throw err
+      console.warn('Balance check failed, proceeding anyway:', err?.message)
     }
-  } catch (err: any) {
-    if (err.message.startsWith('Insufficient USDC balance')) throw err
-    console.warn('Balance check failed, proceeding anyway:', err?.message)
   }
+  // ── End pre-flight check ─────────────────────────────────────────────────
   // ── End pre-flight check ─────────────────────────────────────────────────
 
   console.log('Building transaction...')
