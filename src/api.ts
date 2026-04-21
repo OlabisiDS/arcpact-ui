@@ -163,13 +163,13 @@ export const lockFunds = async (pactId: string, callerAddress: string, amount: s
 
 // ─── approveRelease ───────────────────────────────────────────────────────────
 export const approveRelease = async (pactId: string, callerAddress: string, amount: string, receiverAddress: string): Promise<Pact> => {
-  await sendUSDC(callerAddress, receiverAddress, amount)
+  await sendUSDC(callerAddress, receiverAddress, amount, true)
   return (await api.post<{ data: Pact }>('/pact/approve-release', { pactId, callerAddress })).data.data
 }
 
 // ─── approveRefund ────────────────────────────────────────────────────────────
 export const approveRefund = async (pactId: string, callerAddress: string, amount: string, senderAddress: string): Promise<Pact> => {
-  await sendUSDC(callerAddress, senderAddress, amount)
+  await sendUSDC(callerAddress, senderAddress, amount, true)
   return (await api.post<{ data: Pact }>('/pact/approve-refund', { pactId, callerAddress })).data.data
 }
 
